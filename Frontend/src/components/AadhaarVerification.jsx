@@ -122,6 +122,16 @@ const AadhaarVerification = ({
     setGeneralError('');
   };
 
+  // Real-time Aadhaar validation on blur
+  const validateAadhaarOnBlur = (aadhaarValue) => {
+    if (aadhaarValue) {
+      const validation = validateAadhaarNumber(aadhaarValue);
+      if (!validation.isValid) {
+        setAadhaarError('Invalid Aadhaar number. Please enter a valid 12-digit Aadhaar.');
+      }
+    }
+  };
+
   // Handle image file selection
   const handleImageUpload = (file, type) => {
     // Clear previous errors
@@ -420,6 +430,7 @@ const AadhaarVerification = ({
                   type="text"
                   value={formData.aadhaarNumber}
                   onChange={(e) => handleInputChange('aadhaarNumber', e.target.value.replace(/\D/g, ''))}
+                  onBlur={(e) => validateAadhaarOnBlur(e.target.value)}
                   placeholder="Enter your 12-digit Aadhaar number"
                   className={`w-full px-4 py-3 bg-white border rounded-md text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${aadhaarError ? 'border-red-500' : 'border-gray-300'}`}
                   maxLength={12}

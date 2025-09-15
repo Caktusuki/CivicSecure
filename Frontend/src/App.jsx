@@ -7,6 +7,12 @@ import AadhaarVerification from "./components/AadhaarVerification";
 import { FaBars } from "react-icons/fa";
 
 function App() {
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  
+  // App state
   const [currentPage, setCurrentPage] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -15,12 +21,13 @@ function App() {
       case "dashboard":
         return <Dashboard setCurrentPage={setCurrentPage} />;
       case "file-complaint":
-        return <ComplaintForm />;
+        return <ComplaintForm user={user} />;
       case "profile":
         return <Profile setCurrentPage={setCurrentPage} />;
       case "aadhaar-verify":
         return <AadhaarVerification setCurrentPage={setCurrentPage} />;
       case "track-status":
+        return <TrackStatus />; // <-- Show tracking page here
       case "info-hub":
       case "community":
       default:
@@ -32,6 +39,24 @@ function App() {
     }
   };
 
+  // Show loading spinner while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base-100">
+        <div className="text-center">
+          <span className="loading loading-spinner loading-lg text-green-500"></span>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading CiciSecure...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Show main app if authenticated
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar
@@ -39,6 +64,8 @@ function App() {
         setCurrentPage={setCurrentPage}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        user={user}
+        onLogout={handleLogout}
       />
 
       <div className="flex flex-col flex-1">

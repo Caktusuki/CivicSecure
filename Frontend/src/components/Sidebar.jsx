@@ -1,26 +1,22 @@
 import React from "react";
-import { 
-  FaHome, 
-  FaFileAlt, 
-  FaChartBar, 
-  FaInfoCircle, 
-  FaComments, 
-  FaIdCard,
-  FaUser,
-  FaSignOutAlt
-} from "react-icons/fa";
+import { FaHome, FaFileAlt, FaUser, FaIdCard, FaSearch, FaInfoCircle, FaUsers, FaSignOutAlt } from "react-icons/fa";
 
-const menuItems = [
-  { id: "dashboard", label: "Dashboard", icon: FaHome },
-  { id: "file-complaint", label: "File Complaint", icon: FaFileAlt },
-  { id: "track-status", label: "Track Status", icon: FaChartBar },
-  { id: "info-hub", label: "Info Hub", icon: FaInfoCircle },
-  { id: "community", label: "Community", icon: FaComments },
-  { id: "aadhaar-verify", label: "Aadhaar Verify", icon: FaIdCard },
-  { id: "profile", label: "Profile", icon: FaUser } // Added profile back to menuItems
-];
+const Sidebar = ({ currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, user, onLogout }) => {
+  const menuItems = [
+    { id: "dashboard", label: "Dashboard", icon: FaHome },
+    { id: "file-complaint", label: "File Complaint", icon: FaFileAlt },
+    { id: "track-status", label: "Track Status", icon: FaSearch },
+    { id: "profile", label: "Profile", icon: FaUser },
+    { id: "aadhaar-verify", label: "Verify Aadhaar", icon: FaIdCard },
+    { id: "info-hub", label: "Info Hub", icon: FaInfoCircle },
+    { id: "community", label: "Community", icon: FaUsers },
+  ];
 
-export default function Sidebar({ currentPage, setCurrentPage, sidebarOpen, setSidebarOpen, onLogout }) {
+  const handleMenuClick = (pageId) => {
+    setCurrentPage(pageId);
+    setSidebarOpen(false); // Close sidebar on mobile after selection
+  };
+
   return (
     <aside
       className={`fixed top-0 left-0 z-40 w-64 h-screen transition-transform ease-in-out duration-300 bg-white border-r border-gray-200 ${
@@ -87,4 +83,6 @@ export default function Sidebar({ currentPage, setCurrentPage, sidebarOpen, setS
       </div>
     </aside>
   );
-}
+};
+
+export default Sidebar;

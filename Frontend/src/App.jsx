@@ -4,7 +4,7 @@ import Dashboard from "./components/Dashboard";
 import ComplaintForm from "./components/ComplaintForm";
 import Profile from "./components/Profile";
 import VerifyAadhaar from "./components/VerifyAadhaar";
-import Login from "./components/Login"; // Import the Login component
+import TrackStatus from "./components/Tracking"; // <-- Import your tracking page
 import { FaBars } from "react-icons/fa";
 
 function App() {
@@ -107,14 +107,9 @@ function App() {
           />
         );
       case "aadhaar-verify":
-        return (
-          <VerifyAadhaar 
-            setCurrentPage={setCurrentPage} 
-            theme={theme}
-            user={user}
-          />
-        );
+        return <VerifyAadhaar setCurrentPage={setCurrentPage} theme={theme} />;
       case "track-status":
+        return <TrackStatus />; // <-- Show tracking page here
       case "info-hub":
       case "community":
       default:

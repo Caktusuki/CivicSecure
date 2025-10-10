@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { complaintAPI } from '../services/api';
+import { uploadToCloudinary } from "../utils/uploadToCloudinary";
 import {
   FaFileAlt,
   FaMapMarkerAlt,
@@ -45,7 +46,6 @@ const AadhaarVerification = React.memo(({ onVerificationComplete }) => {
     setError('');
 
     try {
-      // Reduced verification time
       await new Promise(resolve => setTimeout(resolve, 800));
 
       const mockData = {
@@ -138,45 +138,34 @@ const LocationPicker = React.memo(({ onLocationSelect, disabled }) => {
   const map = useRef(null);
   const marker = useRef(null);
 
-  // Initialize Mapbox
   useEffect(() => {
     if (showMap && mapContainer.current && !map.current) {
-      // Set Mapbox access token
       mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
 
-      // Initialize map
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
-        center: [91.7362, 26.1445], // Guwahati coordinates
+        center: [91.7362, 26.1445],
         zoom: 12
       });
 
-      // Add navigation controls
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-      // Add click event listener for location selection
       map.current.on('click', (e) => {
         const { lng, lat } = e.lngLat;
         
-        // Remove existing marker
         if (marker.current) {
           marker.current.remove();
         }
 
-        // Add new marker
         marker.current = new mapboxgl.Marker({ color: '#dc2626' })
           .setLngLat([lng, lat])
           .addTo(map.current);
 
-        // Update coordinates
         setCoordinates({ lat, lng });
-
-        // Reverse geocoding to get address
         reverseGeocode(lng, lat);
       });
 
-      // Handle geolocation
       map.current.addControl(
         new mapboxgl.GeolocateControl({
           positionOptions: {
@@ -198,7 +187,6 @@ const LocationPicker = React.memo(({ onLocationSelect, disabled }) => {
     };
   }, [showMap]);
 
-  // Reverse geocoding function
   const reverseGeocode = async (lng, lat) => {
     try {
       const response = await fetch(
@@ -244,25 +232,21 @@ const LocationPicker = React.memo(({ onLocationSelect, disabled }) => {
         
         setCoordinates({ lat: latitude, lng: longitude });
 
-        // If map is shown, update map view and marker
         if (map.current) {
           map.current.flyTo({
             center: [longitude, latitude],
             zoom: 15
           });
 
-          // Remove existing marker
           if (marker.current) {
             marker.current.remove();
           }
 
-          // Add new marker
           marker.current = new mapboxgl.Marker({ color: '#dc2626' })
             .setLngLat([longitude, latitude])
             .addTo(map.current);
         }
 
-        // Reverse geocoding
         reverseGeocode(longitude, latitude);
         setIsLoading(false);
       },
@@ -277,21 +261,7 @@ const LocationPicker = React.memo(({ onLocationSelect, disabled }) => {
   const handleAddressChange = useCallback((e) => {
     const value = e.target.value;
     setAddress(value);
-
-    if (value.trim()) {
-      // Mock coordinates for any address (you could integrate geocoding here)
-      const lat = 26.1445 + (Math.random() - 0.5) * 0.1;
-      const lng = 91.7362 + (Math.random() - 0.5) * 0.1;
-
-      setCoordinates({ lat, lng });
-      onLocationSelect?.({
-        address: value,
-        latitude: lat,
-        longitude: lng,
-        formatted: value
-      });
-    }
-  }, [onLocationSelect]);
+  }, []);
 
   const geocodeAddress = async (address) => {
     try {
@@ -306,24 +276,22 @@ const LocationPicker = React.memo(({ onLocationSelect, disabled }) => {
         
         setCoordinates({ lat, lng });
         
-        // Update map if shown
         if (map.current) {
           map.current.flyTo({
             center: [lng, lat],
             zoom: 15
           });
 
-          // Remove existing marker
           if (marker.current) {
             marker.current.remove();
           }
 
-          // Add new marker
           marker.current = new mapboxgl.Marker({ color: '#dc2626' })
             .setLngLat([lng, lat])
             .addTo(map.current);
         }
 
+        setAddress(place.place_name);
         onLocationSelect?.({
           address: place.place_name,
           latitude: lat,
@@ -380,7 +348,6 @@ const LocationPicker = React.memo(({ onLocationSelect, disabled }) => {
         </button>
       </div>
 
-      {/* Map Toggle Button */}
       <div className="flex justify-center">
         <button
           type="button"
@@ -393,7 +360,6 @@ const LocationPicker = React.memo(({ onLocationSelect, disabled }) => {
         </button>
       </div>
 
-      {/* Interactive Map */}
       {showMap && (
         <div className="border border-gray-300 rounded-lg overflow-hidden">
           <div className="bg-gray-50 px-4 py-2 border-b border-gray-200">
@@ -409,7 +375,6 @@ const LocationPicker = React.memo(({ onLocationSelect, disabled }) => {
         </div>
       )}
 
-      {/* Selected Location Display */}
       {coordinates.lat && coordinates.lng && (
         <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
           <div className="flex items-center space-x-2">
@@ -444,7 +409,7 @@ const LocationPicker = React.memo(({ onLocationSelect, disabled }) => {
   );
 });
 
-// FIXED Form Field Component [web:267][web:268]
+// Form Field Component
 const FormField = React.memo(({
   label,
   type = "text",
@@ -460,7 +425,6 @@ const FormField = React.memo(({
   rows,
   options = []
 }) => {
-  // Fix: Properly handle different element types [web:267][web:268]
   const renderElement = () => {
     if (as === "select") {
       return (
@@ -498,7 +462,6 @@ const FormField = React.memo(({
       );
     }
 
-    // Default input element - void element, no children [web:267][web:268]
     return (
       <input
         type={type}
@@ -536,7 +499,7 @@ const FormField = React.memo(({
   );
 });
 
-// Simplified File Upload
+// File Upload Component
 const FileUpload = React.memo(({ files, onFilesChange, disabled, maxFiles = 3 }) => {
   const fileInputRef = useRef(null);
 
@@ -562,7 +525,7 @@ const FileUpload = React.memo(({ files, onFilesChange, disabled, maxFiles = 3 })
         ref={fileInputRef}
         type="file"
         multiple
-        accept="image/*,.pdf,.doc,.docx"
+        accept="image/*,video/*,.pdf,.doc,.docx"
         onChange={handleFileInput}
         className="hidden"
         disabled={disabled}
@@ -574,14 +537,17 @@ const FileUpload = React.memo(({ files, onFilesChange, disabled, maxFiles = 3 })
       >
         <FaUpload className="mx-auto text-2xl text-gray-500 mb-2" />
         <p className="text-sm text-gray-700">Click to upload files (max {maxFiles})</p>
-        <p className="text-xs text-gray-500">Images, PDF, DOC (max 5MB each)</p>
+        <p className="text-xs text-gray-500">Images, Videos, PDF, DOC (max 10MB each)</p>
       </div>
 
       {files.length > 0 && (
         <div className="space-y-2">
           {files.map((file, index) => (
             <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-gray-900 truncate">{file.name}</span>
+              <div className="flex items-center space-x-2 flex-1">
+                <span className="text-sm text-gray-900 truncate">{file.name}</span>
+                <span className="text-xs text-gray-500">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+              </div>
               <button
                 type="button"
                 onClick={() => removeFile(index)}
@@ -625,7 +591,6 @@ const SuccessMessage = React.memo(({ complaintId, onReset }) => (
 
 // Main ComplaintForm Component
 function ComplaintForm({ setCurrentPage }) {
-  // Optimized state management
   const [formData, setFormData] = useState({
     title: "",
     category: "",
@@ -639,13 +604,13 @@ function ComplaintForm({ setCurrentPage }) {
 
   const [attachments, setAttachments] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isSuccess, setIsSuccess] = useState(false);
   const [complaintId, setComplaintId] = useState('');
   const [aadhaarVerified, setAadhaarVerified] = useState(false);
   const [aadhaarData, setAadhaarData] = useState(null);
   const [errors, setErrors] = useState({});
 
-  // Simplified validation
   const validateField = useCallback((field, value) => {
     let error = '';
     switch (field) {
@@ -671,7 +636,6 @@ function ComplaintForm({ setCurrentPage }) {
     return !error;
   }, [formData.contactMethod]);
 
-  // Form validation check
   const isFormValid = useMemo(() => {
     const hasRequiredFields = formData.title.trim() && formData.category && formData.description.trim();
     const hasLocation = formData.location.formatted || formData.location.address;
@@ -683,7 +647,6 @@ function ComplaintForm({ setCurrentPage }) {
     return hasRequiredFields && hasLocation && hasValidPhone && hasAadhaarIfNeeded && hasNoErrors;
   }, [formData, errors, aadhaarVerified]);
 
-  // Optimized handlers
   const handleInputChange = useCallback((field, value) => {
     if (field === 'phone') {
       value = value.replace(/\D/g, '');
@@ -691,7 +654,6 @@ function ComplaintForm({ setCurrentPage }) {
 
     setFormData(prev => ({ ...prev, [field]: value }));
 
-    // Clear error on change
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -706,12 +668,12 @@ function ComplaintForm({ setCurrentPage }) {
     setAadhaarData(result.data || null);
   }, []);
 
-  // Optimized form submission
+  // Updated handleSubmit with Cloudinary upload
   const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setUploadProgress(0);
 
-    // Quick validation
     const validations = [
       validateField('title', formData.title),
       validateField('category', formData.category),
@@ -725,44 +687,67 @@ function ComplaintForm({ setCurrentPage }) {
     }
 
     try {
-      console.log('ComplaintForm - Submitting anonymous complaint...', {
-        formData: formData
-      });
+      console.log('ComplaintForm - Starting submission with file uploads...');
       
+      // 1. Upload all files to Cloudinary
+      const uploadedFiles = [];
+      const totalFiles = attachments.length;
+      
+      for (let i = 0; i < attachments.length; i++) {
+        const file = attachments[i];
+        console.log(`Uploading file ${i + 1}/${totalFiles}: ${file.name}`);
+        
+        try {
+          const res = await uploadToCloudinary(file);
+          uploadedFiles.push({
+            url: res.secure_url,
+            public_id: res.public_id,
+            resource_type: res.resource_type,
+            originalName: file.name,
+            fileSize: file.size,
+            fileType: file.type
+          });
+          
+          // Update progress
+          setUploadProgress(Math.round(((i + 1) / totalFiles) * 100));
+          console.log(`File uploaded successfully: ${res.secure_url}`);
+        } catch (uploadError) {
+          console.error(`Failed to upload file ${file.name}:`, uploadError);
+          throw new Error(`Failed to upload file: ${file.name}`);
+        }
+      }
+
+      console.log('All files uploaded successfully:', uploadedFiles);
+
+      // 2. Submit complaint with Cloudinary URLs
       const response = await complaintAPI.submitComplaint({
         ...formData,
         aadhaarData: aadhaarVerified ? aadhaarData : null,
-        attachments: attachments.map(f => ({ 
-          name: f.name, 
-          size: f.size, 
-          type: f.type,
-          originalName: f.name,
-          filename: `${Date.now()}_${f.name}`,
-          fileType: f.type,
-          fileSize: f.size,
-          filePath: `/uploads/${Date.now()}_${f.name}`,
-          url: `/uploads/${Date.now()}_${f.name}`
-        }))
+        attachments: uploadedFiles // Cloudinary URLs instead of raw files
       });
 
+      console.log('Complaint submitted successfully:', response.data);
       setComplaintId(response.data.data.complaintId);
       setIsSuccess(true);
     } catch (error) {
       console.error('ComplaintForm - Submission failed:', {
         status: error.response?.status,
-        message: error.response?.data?.message,
+        message: error.response?.data?.message || error.message,
         error: error.response?.data
       });
       
       let errorMessage = 'Submission failed. Please try again.';
       
-      if (error.response?.data?.message) {
+      if (error.message && error.message.includes('Failed to upload file')) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       }
       
       alert(errorMessage);
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(0);
     }
   }, [formData, attachments, aadhaarVerified, aadhaarData, isFormValid, validateField]);
 
@@ -778,9 +763,9 @@ function ComplaintForm({ setCurrentPage }) {
     setIsSuccess(false);
     setComplaintId('');
     setErrors({});
+    setUploadProgress(0);
   }, []);
 
-  // Constants
   const categories = [
     "Roads & Infrastructure", "Water Supply", "Electricity", "Sanitation & Waste",
     "Public Safety", "Traffic & Transportation", "Environment", "Health Services",
@@ -910,126 +895,144 @@ function ComplaintForm({ setCurrentPage }) {
                 </div>
 
                 {/* Description */}
-                <FormField
-                  label="Detailed Description"
-                  as="textarea"
-                  value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
-                  error={errors.description}
-                  placeholder="Please provide detailed information about the issue..."
-                  maxLength={1000}
-                  rows={4}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-            {/* Location */}
-            <div>
-              <label className="block text-sm font-medium text-gray-900 mb-2">
-                <FaMapMarkerAlt className="inline text-green-600 mr-2" />
-                Location <span className="text-red-500">*</span>
-              </label>
-              <LocationPicker onLocationSelect={handleLocationSelect} disabled={isSubmitting} />
-            </div>
-
-            {/* Contact Information */}
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  label="Contact Method"
-                  as="select"
-                  value={formData.contactMethod}
-                  onChange={(e) => handleInputChange('contactMethod', e.target.value)}
-                  options={contactMethods}
-                  disabled={isSubmitting}
-                  icon={FaEnvelope}
-                  required={false}
-                />
-
-                {(formData.contactMethod === "phone" || formData.contactMethod === "both") && (
+                <div className="mt-6">
                   <FormField
-                    label="Phone Number"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    error={errors.phone}
-                    placeholder="Enter 10-digit phone number"
-                    maxLength={10}
-                    icon={FaPhone}
+                    label="Detailed Description"
+                    as="textarea"
+                    value={formData.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    error={errors.description}
+                    placeholder="Please provide detailed information about the issue..."
+                    maxLength={1000}
+                    rows={4}
                     disabled={isSubmitting}
                   />
-                )}
-              </div>
-            </div>
-
-            {/* File Attachments */}
-            <div className="border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Attachments <span className="text-sm font-normal text-gray-600">(Optional)</span>
-              </h3>
-              <FileUpload
-                files={attachments}
-                onFilesChange={setAttachments}
-                disabled={isSubmitting}
-              />
-            </div>
-
-            {/* Validation Messages */}
-            {formData.reporterType === "verified" && !aadhaarVerified && (
-              <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
-                <div className="flex items-center">
-                  <FaExclamationTriangle className="w-5 h-5 text-orange-600 mr-2" />
-                  <p className="text-sm text-orange-800">
-                    Please complete Aadhaar verification to submit a verified complaint
-                  </p>
                 </div>
               </div>
-            )}
 
-            {(!formData.location.latitude && !formData.location.longitude) && (
-              <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
-                <div className="flex items-center">
-                  <FaMapMarkerAlt className="w-5 h-5 text-orange-600 mr-2" />
-                  <p className="text-sm text-orange-800">
-                    Please select a location above
-                  </p>
+              {/* Location */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  <FaMapMarkerAlt className="inline text-green-600 mr-2" />
+                  Location <span className="text-red-500">*</span>
+                </label>
+                <LocationPicker onLocationSelect={handleLocationSelect} disabled={isSubmitting} />
+              </div>
+
+              {/* Contact Information */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    label="Contact Method"
+                    as="select"
+                    value={formData.contactMethod}
+                    onChange={(e) => handleInputChange('contactMethod', e.target.value)}
+                    options={contactMethods}
+                    disabled={isSubmitting}
+                    icon={FaEnvelope}
+                    required={false}
+                  />
+
+                  {(formData.contactMethod === "phone" || formData.contactMethod === "both") && (
+                    <FormField
+                      label="Phone Number"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      error={errors.phone}
+                      placeholder="Enter 10-digit phone number"
+                      maxLength={10}
+                      icon={FaPhone}
+                      disabled={isSubmitting}
+                    />
+                  )}
                 </div>
               </div>
-            )}
 
-            {/* Submit Buttons */}
-            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={handleReset}
-                disabled={isSubmitting}
-                className="px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-medium rounded-lg transition-colors disabled:opacity-50"
-              >
-                Reset
-              </button>
+              {/* File Attachments */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Attachments <span className="text-sm font-normal text-gray-600">(Optional)</span>
+                </h3>
+                <FileUpload
+                  files={attachments}
+                  onFilesChange={setAttachments}
+                  disabled={isSubmitting}
+                />
+              </div>
 
-              <button
-                type="submit"
-                disabled={isSubmitting || !isFormValid}
-                className={`px-8 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 min-w-40 ${isSubmitting || !isFormValid
-                    ? 'bg-gray-400 cursor-not-allowed text-white'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
-                  }`}
-              >
-                {isSubmitting ? (
-                  <>
-                    <FaSpinner className="animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <FaFileAlt />
-                    Submit Complaint
-                  </>
-                )}
-              </button>
-            </div>
+              {/* Upload Progress */}
+              {isSubmitting && uploadProgress > 0 && (
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-900">Uploading files...</span>
+                    <span className="text-sm font-medium text-blue-900">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200 rounded-full h-2">
+                    <div 
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Messages */}
+              {formData.reporterType === "verified" && !aadhaarVerified && (
+                <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+                  <div className="flex items-center">
+                    <FaExclamationTriangle className="w-5 h-5 text-orange-600 mr-2" />
+                    <p className="text-sm text-orange-800">
+                      Please complete Aadhaar verification to submit a verified complaint
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {(!formData.location.latitude && !formData.location.longitude) && (
+                <div className="bg-orange-50 border border-orange-200 p-4 rounded-lg">
+                  <div className="flex items-center">
+                    <FaMapMarkerAlt className="w-5 h-5 text-orange-600 mr-2" />
+                    <p className="text-sm text-orange-800">
+                      Please select a location above
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Submit Buttons */}
+              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  disabled={isSubmitting}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-medium rounded-lg transition-colors disabled:opacity-50"
+                >
+                  Reset
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !isFormValid}
+                  className={`px-8 py-3 font-semibold rounded-lg transition-colors flex items-center gap-2 min-w-40 ${isSubmitting || !isFormValid
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <FaSpinner className="animate-spin" />
+                      {uploadProgress > 0 ? 'Uploading...' : 'Submitting...'}
+                    </>
+                  ) : (
+                    <>
+                      <FaFileAlt />
+                      Submit Complaint
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
           </div>
         </div>
